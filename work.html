@@ -1,0 +1,1268 @@
+<!DOCTYPE html>
+<html lang="zh">
+	<head>
+		<meta charset="utf-8">
+		<title>Work</title>
+	</head>
+	<body>
+		<input id="time1" />
+		<button id="conver1" onclick="conver1()">转换</button>
+		<br />
+		<span id="start"></span>
+		<button id="copy1" data-clipboard-target="#start" onclick="copy1()">复制</button>
+		<br />
+		<span id="end"></span>
+		<button id="copy2" data-clipboard-target="#end" onclick="copy2()">复制</button>
+		<br />
+		<br />
+		<input id="time2" />
+		<button id="conver2" onclick="conver2()">转换</button>
+		<br />
+		<span id="date"></span>
+		<button id="copy3" data-clipboard-target="#date" onclick="copy3()">复制</button>
+		<br />
+		<br />
+		<button id="analyse1" onclick="analyse()">分析（basic）</button>
+		<button id="analyse2" onclick="analyse2()">分析（compare）</button>
+		<button id="analyse3" onclick="analyse3()">分析（import）</button>
+		<script src="https://cdn.staticfile.org/jquery/3.6.0/jquery.min.js"></script>
+		<script src="http://cdn.staticfile.org/moment.js/2.24.0/moment-with-locales.js"></script>
+		<script src="http://cdn.staticfile.org/moment-timezone/0.5.25/moment-timezone-with-data.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/clipboard@2.0.6/dist/clipboard.min.js"></script>
+		<script>
+			function conver1() {
+				let timeStr = $("#time1")[0].value;
+				let startStr = "";
+				let endStr = "";
+				
+				if (timeStr === "0") {
+					startStr = "1970-01-01T00:00:00.001Z";
+					endStr = "1970-01-01T00:00:00.001Z";
+				} else {
+					let year = timeStr.slice(0, 4);
+					let month = timeStr.slice(4, 6);
+					let day = timeStr.slice(6, 8);
+					let startHour = timeStr.slice(8, 10);
+					let startMinute = timeStr.slice(10, 12);
+					let endHour = timeStr.slice(12, 14);
+					let endMinute = timeStr.slice(14, 16);
+					
+					let startTimeStr = year + "-" + month + "-" + day + " " + startHour + ":" + startMinute;
+					let endTimeStr = year + "-" + month + "-" + day + " " + endHour + ":" + endMinute;
+					
+					let startTime = moment.tz(startTimeStr, "Asia/Tokyo");
+					let endTime = moment.tz(endTimeStr, "Asia/Tokyo");
+					if (startTime > endTime) {
+						endTime = endTime.add(1, "days");
+					}
+					
+					startStr = startTime.utc().format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+					endStr = endTime.utc().format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+				}
+				
+				$("#start")[0].innerHTML = startStr;
+				$("#end")[0].innerHTML = endStr;
+				$("#time1")[0].value = "";
+			}
+			
+			function copy1() {
+				let clipboard = new ClipboardJS("#copy1");
+
+				clipboard.on("success", function(e) {
+					e.clearSelection();
+				});
+			}
+			
+			function copy2() {
+				let clipboard = new ClipboardJS("#copy2");
+				
+				clipboard.on("success", function(e) {
+					e.clearSelection();
+				});
+			}
+			
+			function conver2() {
+				let timeStr = $("#time2")[0].value;
+				let dateStr = "";
+				
+				if (timeStr === "0") {
+					dateStr = "1970-01-01T00:00:00.001Z";
+				} else {
+					let date = moment.tz(timeStr, "Asia/Shanghai");
+					dateStr = date.utc().format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+				}
+				
+				$("#date")[0].innerHTML = dateStr;
+				$("#time2")[0].value = "";
+			}
+			
+			function copy3() {
+				let clipboard = new ClipboardJS("#copy3");
+				
+				clipboard.on("success", function(e) {
+					e.clearSelection();
+				});
+			}
+			
+			function getIssuesDataAll() {
+				let url = "../Database/basic/redmine/issues.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getIssuesDataAll2() {
+				let url = "../Database/compare/redmine/issues.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getIssuesDataAll3() {
+				let url = "../Database/import/redmine/issues.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data1 = request.responseText;
+						let data = "[" + data1.replace(/}\r\n{/g, "}," + "\r" + "\n" + "{") + "]";
+						def.resolve(JSON.parse(data));
+					}
+				};
+				
+				return def;
+			}
+			
+			function getIssuesDataByCategory(dataAll, category) {
+				let data = [];
+				
+				for (let i = 0; i < dataAll.length; i++) {
+					if (dataAll[i].project === "素材部" && dataAll[i].category === category) {
+						data.push(dataAll[i]);
+					}
+				}
+				
+				return data;
+			}
+			
+			function getIssuesVideoSpentTime(dataAll) {
+				let time = 0;
+				
+				for (let i = 0; i < dataAll.length; i++) {
+					if (dataAll[i]._id === 1482) {
+						time = dataAll[i].spent_time;
+					}
+				}
+				
+				return time;
+			}
+			
+			function getIssuesVideoJPSpentTime(dataAll) {
+				let time = 0;
+				
+				for (let i = 0; i < dataAll.length; i++) {
+					if (dataAll[i]._id === 1483) {
+						time = dataAll[i].spent_time;
+					}
+				}
+				
+				return time;
+			}
+			
+			function getIssuesVideoJPSpentTimeByCategory(dataAll, category) {
+				let time = 0;
+				let id = 0;
+				
+				switch (category) {
+					case "グラビア":
+						id = 1484;
+						break;
+					case "エロス":
+						id = 1485;
+						break;
+					case "バラエティ":
+						id = 1486;
+						break;
+					default:
+						break;
+				}
+				
+				for (let i = 0; i < dataAll.length; i++) {
+					if (dataAll[i]._id === id) {
+						time = dataAll[i].spent_time;
+					}
+				}
+				
+				return time;
+			}
+			
+			function getVideoJPCategory1Data() {
+				let url = "../Database/basic/web/resource/video_jp_category_1.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory1Data2() {
+				let url = "../Database/compare/web/resource/video_jp_category_1.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory1Data3() {
+				let url = "../Database/import/web/resource/video_jp_category_1.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data1 = request.responseText;
+						let data = "[" + data1.replace(/}\r\n{/g, "}," + "\r" + "\n" + "{") + "]";
+						def.resolve(JSON.parse(data));
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory2Data() {
+				let url = "../Database/basic/web/resource/video_jp_category_2.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory2Data2() {
+				let url = "../Database/compare/web/resource/video_jp_category_2.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory2Data3() {
+				let url = "../Database/import/web/resource/video_jp_category_2.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data1 = request.responseText;
+						let data = "[" + data1.replace(/}\r\n{/g, "}," + "\r" + "\n" + "{") + "]";
+						def.resolve(JSON.parse(data));
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory3Data() {
+				let url = "../Database/basic/web/resource/video_jp_category_3.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory3Data2() {
+				let url = "../Database/compare/web/resource/video_jp_category_3.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data = JSON.parse(request.responseText);
+						def.resolve(data);
+					}
+				};
+				
+				return def;
+			}
+			
+			function getVideoJPCategory3Data3() {
+				let url = "../Database/import/web/resource/video_jp_category_3.json";
+				let request = new XMLHttpRequest();
+				let def = $.Deferred();
+				
+				request.open("GET", url);
+				request.send(null);
+				request.onload = function () {
+					if (request.status === 200) {
+						let data1 = request.responseText;
+						let data = "[" + data1.replace(/}\r\n{/g, "}," + "\r" + "\n" + "{") + "]";
+						def.resolve(JSON.parse(data));
+					}
+				};
+				
+				return def;
+			}
+			
+			function analyseIssuesVideoJPCategory1Data(data, exceptArray) {
+				let errorArray = [];
+				let warnArray = [];
+				
+				for (let i = 0; i < data.length; i++) {
+					let firstConfirmTime = calculateTime(data[i].first_confirm_time);
+					let secondConfirmTime = calculateTime(data[i].second_confirm_time);
+					let thirdConfirmTime = calculateTime(data[i].third_confirm_time);
+					let fourthConfirmTime = calculateTime(data[i].fourth_confirm_time);
+					
+					if (data[i].spent_time !== firstConfirmTime + secondConfirmTime + thirdConfirmTime + fourthConfirmTime) {
+						if (exceptArray.indexOf(data[i]._id) === -1) {
+							errorArray.push(data[i]._id);
+						} else {
+							warnArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("issues video_jp_category_1 data 分析开始");
+				if (errorArray.length === 0) {
+					if (warnArray.length === 0) {
+						console.log("issues video_jp_category_1 data 分析结果：正确");
+					} else {
+						console.warn("issues video_jp_category_1 data 分析结果：正确");
+						console.warn(warnArray);
+					}
+				} else {
+					console.error("issues video_jp_category_1 data 分析结果：错误");
+					console.error(errorArray);
+				}
+				console.log("issues video_jp_category_1 data 分析结束");
+			}
+			
+			function analyseIssuesVideoJPCategory2Data(data, exceptArray) {
+				let errorArray = [];
+				let warnArray = [];
+				
+				for (let i = 0; i < data.length; i++) {
+					let firstConfirmTime = calculateTime(data[i].first_confirm_time);
+					let secondConfirmTime = calculateTime(data[i].second_confirm_time);
+					let thirdConfirmTime = calculateTime(data[i].third_confirm_time);
+					let fourthConfirmTime = calculateTime(data[i].fourth_confirm_time);
+					
+					if (data[i].spent_time !== firstConfirmTime + secondConfirmTime + thirdConfirmTime + fourthConfirmTime) {
+						if (exceptArray.indexOf(data[i]._id) === -1) {
+							errorArray.push(data[i]._id);
+						} else {
+							warnArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("issues video_jp_category_2 data 分析开始");
+				if (errorArray.length === 0) {
+					if (warnArray.length === 0) {
+						console.log("issues video_jp_category_2 data 分析结果：正确");
+					} else {
+						console.warn("issues video_jp_category_2 data 分析结果：正确");
+						console.warn(warnArray);
+					}
+				} else {
+					console.error("issues video_jp_category_2 data 分析结果：错误");
+					console.error(errorArray);
+				}
+				console.log("issues video_jp_category_2 data 分析结束");
+			}
+			
+			function analyseIssuesVideoJPCategory3Data(data, exceptArray) {
+				let errorArray = [];
+				let warnArray = [];
+				
+				for (let i = 0; i < data.length; i++) {
+					let firstConfirmTime = calculateTime(data[i].first_confirm_time);
+					let secondConfirmTime = calculateTime(data[i].second_confirm_time);
+					let thirdConfirmTime = calculateTime(data[i].third_confirm_time);
+					let fourthConfirmTime = calculateTime(data[i].fourth_confirm_time);
+					
+					if (data[i].spent_time !== firstConfirmTime + secondConfirmTime + thirdConfirmTime + fourthConfirmTime) {
+						if (exceptArray.indexOf(data[i]._id) === -1) {
+							errorArray.push(data[i]._id);
+						} else {
+							warnArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("issues video_jp_category_3 data 分析开始");
+				if (errorArray.length === 0) {
+					if (warnArray.length === 0) {
+						console.log("issues video_jp_category_3 data 分析结果：正确");
+					} else {
+						console.warn("issues video_jp_category_3 data 分析结果：正确");
+						console.warn(warnArray);
+					}
+				} else {
+					console.error("issues video_jp_category_3 data 分析结果：错误");
+					console.error(errorArray);
+				}
+				console.log("issues video_jp_category_3 data 分析结束");
+			}
+			
+			function analyseIssuesVideoJPCategory1Time(data, totalTime) {
+				let time = 0;
+				
+				for (let i = 0; i < data.length; i++) {
+					time = parseFloat((time + data[i].spent_time).toFixed(2));
+				}
+				
+				console.log("issues video_jp_category_1 time 分析开始");
+				if (time === totalTime) {
+					console.log("issues video_jp_category_1 time 分析结果：正确");
+				} else {
+					console.error("issues video_jp_category_1 time 分析结果：错误");
+					console.error("record time:" + totalTime);
+					console.error("calculate time:" + time);
+				}
+				console.log("issues video_jp_category_1 time 分析结束");
+			}
+			
+			function analyseIssuesVideoJPCategory2Time(data, totalTime) {
+				let time = 0;
+				
+				for (let i = 0; i < data.length; i++) {
+					time = parseFloat((time + data[i].spent_time).toFixed(2));
+				}
+				
+				console.log("issues video_jp_category_2 time 分析开始");
+				if (time === totalTime) {
+					console.log("issues video_jp_category_2 time 分析结果：正确");
+				} else {
+					console.error("issues video_jp_category_2 time 分析结果：错误");
+					console.error("record time:" + totalTime);
+					console.error("calculate time:" + time);
+				}
+				console.log("issues video_jp_category_2 time 分析结束");
+			}
+			
+			function analyseIssuesVideoJPCategory3Time(data, totalTime) {
+				let time = 0;
+				
+				for (let i = 0; i < data.length; i++) {
+					time = parseFloat((time + data[i].spent_time).toFixed(2));
+				}
+				
+				console.log("issues video_jp_category_3 time 分析开始");
+				if (time === totalTime) {
+					console.log("issues video_jp_category_3 time 分析结果：正确");
+				} else {
+					console.error("issues video_jp_category_3 time 分析结果：错误");
+					console.error("record time:" + totalTime);
+					console.error("calculate time:" + time);
+				}
+				console.log("issues video_jp_category_3 time 分析结束");
+			}
+			
+			function analyseIssuesVideoJPTime(totalTime, category1Time, category2Time, category3Time) {
+				let time = 0;
+				
+				time = parseFloat((category1Time + category2Time + category3Time).toFixed(2));
+				
+				console.log("issues video_jp time 分析开始");
+				if (time === totalTime) {
+					console.log("issues video_jp time 分析结果：正确");
+				} else {
+					console.error("issues video_jp time 分析结果：错误");
+					console.error("record time:" + totalTime);
+					console.error("calculate time:" + time);
+				}
+				console.log("issues video_jp time 分析结束");
+			}
+			
+			function analyseIssuesVideoTime(totalTime, jpTime) {
+				let time = 0;
+				
+				time = jpTime;
+				
+				console.log("issues video time 分析开始");
+				if (time === totalTime) {
+					console.log("issues video time 分析结果：正确");
+				} else {
+					console.error("issues video time 分析结果：错误");
+					console.error("record time:" + totalTime);
+					console.error("calculate time:" + time);
+				}
+				console.log("issues video time 分析结束");
+			}
+			
+			function compareVideoJPCategory1Name(data, issuesData) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if (data[i].name !== issuesData[i].subject) {
+							errorArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("video_jp_category_1 name 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_1 name 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						console.log("video_jp_category_1 name 比较结果：正确");
+					} else {
+						console.error("video_jp_category_1 name 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_1 name 比较结束");
+			}
+			
+			function compareVideoJPCategory2Name(data, issuesData) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if (data[i].name !== issuesData[i].subject) {
+							errorArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("video_jp_category_2 name 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_2 name 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						console.log("video_jp_category_2 name 比较结果：正确");
+					} else {
+						console.error("video_jp_category_2 name 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_2 name 比较结束");
+			}
+			
+			function compareVideoJPCategory3Name(data, issuesData) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if (data[i].name !== issuesData[i].subject) {
+							errorArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("video_jp_category_3 name 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_3 name 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						console.log("video_jp_category_3 name 比较结果：正确");
+					} else {
+						console.error("video_jp_category_3 name 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_3 name 比较结束");
+			}
+			
+			function compareVideoJPCategory1Time(data, issuesData) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if ((data[i].start_time.$date !== issuesData[i].start_time.$date)
+							|| (data[i].end_time.$date !== issuesData[i].end_time.$date)) {
+							errorArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("video_jp_category_1 time 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_1 time 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						console.log("video_jp_category_1 time 比较结果：正确");
+					} else {
+						console.error("video_jp_category_1 time 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_1 time 比较结束");
+			}
+			
+			function compareVideoJPCategory2Time(data, issuesData) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if ((data[i].start_time.$date !== issuesData[i].start_time.$date)
+							|| (data[i].end_time.$date !== issuesData[i].end_time.$date)) {
+							errorArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("video_jp_category_2 time 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_2 time 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						console.log("video_jp_category_2 time 比较结果：正确");
+					} else {
+						console.error("video_jp_category_2 time 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_2 time 比较结束");
+			}
+			
+			function compareVideoJPCategory3Time(data, issuesData) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if ((data[i].start_time.$date !== issuesData[i].start_time.$date)
+							|| (data[i].end_time.$date !== issuesData[i].end_time.$date)) {
+							errorArray.push(data[i]._id);
+						}
+					}
+				}
+				
+				console.log("video_jp_category_3 time 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_3 time 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						console.log("video_jp_category_3 time 比较结果：正确");
+					} else {
+						console.error("video_jp_category_3 time 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_3 time 比较结束");
+			}
+			
+			function compareVideoJPCategory1Confirm(data, issuesData, exceptArray) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				let warnArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if ((data[i].confirm.details[0].result !== issuesData[i].first_confirm_result)
+							|| (data[i].confirm.details[0].time !== issuesData[i].first_confirm_time)
+							|| (data[i].confirm.details[0].date.$date !== issuesData[i].first_confirm_date.$date)
+							|| (data[i].confirm.details[1].result !== issuesData[i].second_confirm_result)
+							|| (data[i].confirm.details[1].time !== issuesData[i].second_confirm_time)
+							|| (data[i].confirm.details[1].date.$date !== issuesData[i].second_confirm_date.$date)
+							|| (data[i].confirm.details[2].result !== issuesData[i].third_confirm_result)
+							|| (data[i].confirm.details[2].time !== issuesData[i].third_confirm_time)
+							|| (data[i].confirm.details[2].date.$date !== issuesData[i].third_confirm_date.$date)
+							|| (data[i].confirm.details[3].result !== issuesData[i].fourth_confirm_result)
+							|| (data[i].confirm.details[3].time !== issuesData[i].fourth_confirm_time)
+							|| (data[i].confirm.details[3].date.$date !== issuesData[i].fourth_confirm_date.$date)) {
+							if (exceptArray.indexOf(issuesData[i]._id) === -1) {
+								errorArray.push(data[i]._id);
+							} else {
+								warnArray.push(issuesData[i]._id);
+							}
+						}
+					}
+				}
+				
+				console.log("video_jp_category_1 confirm 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_1 confirm 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						if (warnArray.length === 0) {
+							console.log("video_jp_category_1 confirm 比较结果：正确");
+						} else {
+							console.warn("video_jp_category_1 confirm 比较结果：正确");
+							console.warn(warnArray);
+						}
+					} else {
+						console.error("video_jp_category_1 confirm 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_1 confirm 比较结束");
+			}
+			
+			function compareVideoJPCategory2Confirm(data, issuesData, exceptArray) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				let warnArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if ((data[i].confirm.details[0].result !== issuesData[i].first_confirm_result)
+							|| (data[i].confirm.details[0].time !== issuesData[i].first_confirm_time)
+							|| (data[i].confirm.details[0].date.$date !== issuesData[i].first_confirm_date.$date)
+							|| (data[i].confirm.details[1].result !== issuesData[i].second_confirm_result)
+							|| (data[i].confirm.details[1].time !== issuesData[i].second_confirm_time)
+							|| (data[i].confirm.details[1].date.$date !== issuesData[i].second_confirm_date.$date)
+							|| (data[i].confirm.details[2].result !== issuesData[i].third_confirm_result)
+							|| (data[i].confirm.details[2].time !== issuesData[i].third_confirm_time)
+							|| (data[i].confirm.details[2].date.$date !== issuesData[i].third_confirm_date.$date)
+							|| (data[i].confirm.details[3].result !== issuesData[i].fourth_confirm_result)
+							|| (data[i].confirm.details[3].time !== issuesData[i].fourth_confirm_time)
+							|| (data[i].confirm.details[3].date.$date !== issuesData[i].fourth_confirm_date.$date)) {
+							if (exceptArray.indexOf(issuesData[i]._id) === -1) {
+								errorArray.push(data[i]._id);
+							} else {
+								warnArray.push(issuesData[i]._id);
+							}
+						}
+					}
+				}
+				
+				console.log("video_jp_category_2 confirm 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_2 confirm 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						if (warnArray.length === 0) {
+							console.log("video_jp_category_2 confirm 比较结果：正确");
+						} else {
+							console.warn("video_jp_category_2 confirm 比较结果：正确");
+							console.warn(warnArray);
+						}
+					} else {
+						console.error("video_jp_category_2 confirm 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_2 confirm 比较结束");
+			}
+			
+			function compareVideoJPCategory3Confirm(data, issuesData, exceptArray) {
+				let compareLengthResult = true;
+				let errorArray = [];
+				let warnArray = [];
+				
+				if (data.length !== issuesData.length) {
+					compareLengthResult = false;
+				} else {
+					for (let i = 0; i < data.length; i++) {
+						if ((data[i].confirm.details[0].result !== issuesData[i].first_confirm_result)
+							|| (data[i].confirm.details[0].time !== issuesData[i].first_confirm_time)
+							|| (data[i].confirm.details[0].date.$date !== issuesData[i].first_confirm_date.$date)
+							|| (data[i].confirm.details[1].result !== issuesData[i].second_confirm_result)
+							|| (data[i].confirm.details[1].time !== issuesData[i].second_confirm_time)
+							|| (data[i].confirm.details[1].date.$date !== issuesData[i].second_confirm_date.$date)
+							|| (data[i].confirm.details[2].result !== issuesData[i].third_confirm_result)
+							|| (data[i].confirm.details[2].time !== issuesData[i].third_confirm_time)
+							|| (data[i].confirm.details[2].date.$date !== issuesData[i].third_confirm_date.$date)
+							|| (data[i].confirm.details[3].result !== issuesData[i].fourth_confirm_result)
+							|| (data[i].confirm.details[3].time !== issuesData[i].fourth_confirm_time)
+							|| (data[i].confirm.details[3].date.$date !== issuesData[i].fourth_confirm_date.$date)) {
+							if (exceptArray.indexOf(issuesData[i]._id) === -1) {
+								errorArray.push(data[i]._id);
+							} else {
+								warnArray.push(issuesData[i]._id);
+							}
+						}
+					}
+				}
+				
+				console.log("video_jp_category_3 confirm 比较开始");
+				if (compareLengthResult === false) {
+					console.error("video_jp_category_3 confirm 比较结果：错误");
+					console.error("长度不匹配");
+				} else {
+					if (errorArray.length === 0) {
+						if (warnArray.length === 0) {
+							console.log("video_jp_category_3 confirm 比较结果：正确");
+						} else {
+							console.warn("video_jp_category_3 confirm 比较结果：正确");
+							console.warn(warnArray);
+						}
+					} else {
+						console.error("video_jp_category_3 confirm 比较结果：错误");
+						console.error(errorArray);
+					}
+				}
+				console.log("video_jp_category_3 confirm 比较结束");
+			}
+			
+			function analyseWebVideoJPCategory1Data(data) {
+				let errorArray = [];
+				
+				for (let i = 0; i < data.length; i++) {
+					let details = data[i].confirm.details;
+					let counter = 0;
+					
+					for (let j = 0; j < details.length; j++) {
+						if ((details[j].result === -1) && (details[j].time === "") && (details[j].date.$date === "1970-01-01T00:00:00.001Z")) {
+							counter++;
+						}
+					}
+					
+					if (data[i].confirm.phase !== 3 - counter) {
+						errorArray.push(data[i]._id);
+					}
+				}
+				
+				console.log("web video_jp_category_1 data 分析开始");
+				if (errorArray.length === 0) {
+					console.log("web video_jp_category_1 data 分析结果：正确");
+				} else {
+					console.error("web video_jp_category_1 data 分析结果：错误");
+					console.error(errorArray);
+				}
+				console.log("web video_jp_category_1 data 分析结束");
+			}
+			
+			function analyseWebVideoJPCategory2Data(data) {
+				let errorArray = [];
+				
+				for (let i = 0; i < data.length; i++) {
+					let details = data[i].confirm.details;
+					let counter = 0;
+					
+					for (let j = 0; j < details.length; j++) {
+						if ((details[j].result === -1) && (details[j].time === "") && (details[j].date.$date === "1970-01-01T00:00:00.001Z")) {
+							counter++;
+						}
+					}
+					
+					if (data[i].confirm.phase !== 3 - counter) {
+						errorArray.push(data[i]._id);
+					}
+				}
+				
+				console.log("web video_jp_category_2 data 分析开始");
+				if (errorArray.length === 0) {
+					console.log("web video_jp_category_2 data 分析结果：正确");
+				} else {
+					console.error("web video_jp_category_2 data 分析结果：错误");
+					console.error(errorArray);
+				}
+				console.log("web video_jp_category_2 data 分析结束");
+			}
+			
+			function analyseWebVideoJPCategory3Data(data) {
+				let errorArray = [];
+				
+				for (let i = 0; i < data.length; i++) {
+					let details = data[i].confirm.details;
+					let counter = 0;
+					
+					for (let j = 0; j < details.length; j++) {
+						if ((details[j].result === -1) && (details[j].time === "") && (details[j].date.$date === "1970-01-01T00:00:00.001Z")) {
+							counter++;
+						}
+					}
+					
+					if (data[i].confirm.phase !== 3 - counter) {
+						errorArray.push(data[i]._id);
+					}
+				}
+				
+				console.log("web video_jp_category_3 data 分析开始");
+				if (errorArray.length === 0) {
+					console.log("web video_jp_category_3 data 分析结果：正确");
+				} else {
+					console.error("web video_jp_category_3 data 分析结果：错误");
+					console.error(errorArray);
+				}
+				console.log("web video_jp_category_3 data 分析结束");
+			}
+			
+			function calculateTime(str) {
+				let time = 0;
+				
+				if (str !== "") {
+					let hour = parseInt(str.slice(0, 2), 10);
+					let minute = parseInt(str.slice(3, 5), 10);
+
+					time = parseFloat(((hour * 60 + minute) / 60).toFixed(2));
+					if (time < 0.02) {
+						time = 0.02;
+					}
+				}
+				
+				return time;
+			}
+			
+			function analyse() {
+				let issuesAllData = [];
+				let issuesVideoJPCategory1Data = [];
+				let issuesVideoJPCategory2Data = [];
+				let issuesVideoJPCategory3Data = [];
+				let issuesVideoSpentTime = 0;
+				let issuesVideoJPSpentTime = 0;
+				let issuesVideoJPCategory1SpentTime = 0;
+				let issuesVideoJPCategory2SpentTime = 0;
+				let issuesVideoJPCategory3SpentTime = 0;
+				
+				let videoJPCategory1Data = [];
+				let videoJPCategory2Data = [];
+				let videoJPCategory3Data = [];
+				
+				let exceptArray = [];
+				// let exceptArray = [2239, 2340, 2387, 2440, 2463, 2470, 2608, 2617, 2632, 2885,
+				// 					2905];
+				
+				let def = $.Deferred();
+				let def2 = $.Deferred();
+				let def3 = $.Deferred();
+				let def4 = $.Deferred();
+				let def5 = $.Deferred();
+				let def6 = $.Deferred();
+				
+				getIssuesDataAll().done(function (data) {
+					issuesAllData = data;
+					issuesVideoJPCategory1Data = getIssuesDataByCategory(data, "グラビア");
+					issuesVideoJPCategory2Data = getIssuesDataByCategory(data, "エロス");
+					issuesVideoJPCategory3Data = getIssuesDataByCategory(data, "バラエティ");
+					issuesVideoSpentTime = getIssuesVideoSpentTime(data);
+					issuesVideoJPSpentTime = getIssuesVideoJPSpentTime(data);
+					issuesVideoJPCategory1SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "グラビア");
+					issuesVideoJPCategory2SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "エロス");
+					issuesVideoJPCategory3SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "バラエティ");
+					def.resolve();
+				});
+				
+				def.done(function () {
+					getVideoJPCategory1Data().done(function (data) {
+						videoJPCategory1Data = data;
+						def2.resolve();
+					});
+				});
+				
+				def2.done(function () {
+					getVideoJPCategory2Data().done(function (data) {
+						videoJPCategory2Data = data;
+						def3.resolve();
+					});
+				});
+				
+				def3.done(function () {
+					getVideoJPCategory3Data().done(function (data) {
+						videoJPCategory3Data = data;
+						def4.resolve();
+					});
+				});
+				
+				def4.done(function () {
+					analyseIssuesVideoJPCategory1Data(issuesVideoJPCategory1Data, exceptArray);
+					analyseIssuesVideoJPCategory2Data(issuesVideoJPCategory2Data, exceptArray);
+					analyseIssuesVideoJPCategory3Data(issuesVideoJPCategory3Data, exceptArray);
+					analyseIssuesVideoJPCategory1Time(issuesVideoJPCategory1Data, issuesVideoJPCategory1SpentTime);
+					analyseIssuesVideoJPCategory2Time(issuesVideoJPCategory2Data, issuesVideoJPCategory2SpentTime);
+					analyseIssuesVideoJPCategory3Time(issuesVideoJPCategory3Data, issuesVideoJPCategory3SpentTime);
+					analyseIssuesVideoJPTime(issuesVideoJPSpentTime, issuesVideoJPCategory1SpentTime, issuesVideoJPCategory2SpentTime, issuesVideoJPCategory3SpentTime);
+					analyseIssuesVideoTime(issuesVideoSpentTime, issuesVideoJPSpentTime);
+					def5.resolve();
+				});
+				
+				def5.done(function () {
+					compareVideoJPCategory1Name(videoJPCategory1Data, issuesVideoJPCategory1Data);
+					compareVideoJPCategory2Name(videoJPCategory2Data, issuesVideoJPCategory2Data);
+					compareVideoJPCategory3Name(videoJPCategory3Data, issuesVideoJPCategory3Data);
+					compareVideoJPCategory1Time(videoJPCategory1Data, issuesVideoJPCategory1Data);
+					compareVideoJPCategory2Time(videoJPCategory2Data, issuesVideoJPCategory2Data);
+					compareVideoJPCategory3Time(videoJPCategory3Data, issuesVideoJPCategory3Data);
+					compareVideoJPCategory1Confirm(videoJPCategory1Data, issuesVideoJPCategory1Data, exceptArray);
+					compareVideoJPCategory2Confirm(videoJPCategory2Data, issuesVideoJPCategory2Data, exceptArray);
+					compareVideoJPCategory3Confirm(videoJPCategory3Data, issuesVideoJPCategory3Data, exceptArray);
+					def6.resolve();
+				});
+				
+				def6.done(function () {
+					analyseWebVideoJPCategory1Data(videoJPCategory1Data);
+					analyseWebVideoJPCategory2Data(videoJPCategory2Data);
+					analyseWebVideoJPCategory3Data(videoJPCategory3Data);
+				});
+			}
+			
+			function analyse2() {
+				let issuesAllData = [];
+				let issuesVideoJPCategory1Data = [];
+				let issuesVideoJPCategory2Data = [];
+				let issuesVideoJPCategory3Data = [];
+				let issuesVideoSpentTime = 0;
+				let issuesVideoJPSpentTime = 0;
+				let issuesVideoJPCategory1SpentTime = 0;
+				let issuesVideoJPCategory2SpentTime = 0;
+				let issuesVideoJPCategory3SpentTime = 0;
+				
+				let videoJPCategory1Data = [];
+				let videoJPCategory2Data = [];
+				let videoJPCategory3Data = [];
+				
+				let exceptArray = [2239, 2340, 2387, 2440, 2463, 2470, 2608, 2617, 2632, 2885,
+									2905];
+				
+				let def = $.Deferred();
+				let def2 = $.Deferred();
+				let def3 = $.Deferred();
+				let def4 = $.Deferred();
+				let def5 = $.Deferred();
+				let def6 = $.Deferred();
+				
+				getIssuesDataAll2().done(function (data) {
+					issuesAllData = data;
+					issuesVideoJPCategory1Data = getIssuesDataByCategory(data, "グラビア");
+					issuesVideoJPCategory2Data = getIssuesDataByCategory(data, "エロス");
+					issuesVideoJPCategory3Data = getIssuesDataByCategory(data, "バラエティ");
+					issuesVideoSpentTime = getIssuesVideoSpentTime(data);
+					issuesVideoJPSpentTime = getIssuesVideoJPSpentTime(data);
+					issuesVideoJPCategory1SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "グラビア");
+					issuesVideoJPCategory2SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "エロス");
+					issuesVideoJPCategory3SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "バラエティ");
+					def.resolve();
+				});
+				
+				def.done(function () {
+					getVideoJPCategory1Data2().done(function (data) {
+						videoJPCategory1Data = data;
+						def2.resolve();
+					});
+				});
+				
+				def2.done(function () {
+					getVideoJPCategory2Data2().done(function (data) {
+						videoJPCategory2Data = data;
+						def3.resolve();
+					});
+				});
+				
+				def3.done(function () {
+					getVideoJPCategory3Data2().done(function (data) {
+						videoJPCategory3Data = data;
+						def4.resolve();
+					});
+				});
+				
+				def4.done(function () {
+					analyseIssuesVideoJPCategory1Data(issuesVideoJPCategory1Data, exceptArray);
+					analyseIssuesVideoJPCategory2Data(issuesVideoJPCategory2Data, exceptArray);
+					analyseIssuesVideoJPCategory3Data(issuesVideoJPCategory3Data, exceptArray);
+					analyseIssuesVideoJPCategory1Time(issuesVideoJPCategory1Data, issuesVideoJPCategory1SpentTime);
+					analyseIssuesVideoJPCategory2Time(issuesVideoJPCategory2Data, issuesVideoJPCategory2SpentTime);
+					analyseIssuesVideoJPCategory3Time(issuesVideoJPCategory3Data, issuesVideoJPCategory3SpentTime);
+					analyseIssuesVideoJPTime(issuesVideoJPSpentTime, issuesVideoJPCategory1SpentTime, issuesVideoJPCategory2SpentTime, issuesVideoJPCategory3SpentTime);
+					analyseIssuesVideoTime(issuesVideoSpentTime, issuesVideoJPSpentTime);
+					def5.resolve();
+				});
+				
+				def5.done(function () {
+					compareVideoJPCategory1Name(videoJPCategory1Data, issuesVideoJPCategory1Data);
+					compareVideoJPCategory2Name(videoJPCategory2Data, issuesVideoJPCategory2Data);
+					compareVideoJPCategory3Name(videoJPCategory3Data, issuesVideoJPCategory3Data);
+					compareVideoJPCategory1Time(videoJPCategory1Data, issuesVideoJPCategory1Data);
+					compareVideoJPCategory2Time(videoJPCategory2Data, issuesVideoJPCategory2Data);
+					compareVideoJPCategory3Time(videoJPCategory3Data, issuesVideoJPCategory3Data);
+					compareVideoJPCategory1Confirm(videoJPCategory1Data, issuesVideoJPCategory1Data, exceptArray);
+					compareVideoJPCategory2Confirm(videoJPCategory2Data, issuesVideoJPCategory2Data, exceptArray);
+					compareVideoJPCategory3Confirm(videoJPCategory3Data, issuesVideoJPCategory3Data, exceptArray);
+					def6.resolve();
+				});
+				
+				def6.done(function () {
+					analyseWebVideoJPCategory1Data(videoJPCategory1Data);
+					analyseWebVideoJPCategory2Data(videoJPCategory2Data);
+					analyseWebVideoJPCategory3Data(videoJPCategory3Data);
+				});
+			}
+			
+			function analyse3() {
+				let issuesAllData = [];
+				let issuesVideoJPCategory1Data = [];
+				let issuesVideoJPCategory2Data = [];
+				let issuesVideoJPCategory3Data = [];
+				let issuesVideoSpentTime = 0;
+				let issuesVideoJPSpentTime = 0;
+				let issuesVideoJPCategory1SpentTime = 0;
+				let issuesVideoJPCategory2SpentTime = 0;
+				let issuesVideoJPCategory3SpentTime = 0;
+				
+				let videoJPCategory1Data = [];
+				let videoJPCategory2Data = [];
+				let videoJPCategory3Data = [];
+				
+				let exceptArray = [2239, 2340, 2387, 2440, 2463, 2470, 2608, 2617, 2632, 2885,
+									2905];
+				
+				let def = $.Deferred();
+				let def2 = $.Deferred();
+				let def3 = $.Deferred();
+				let def4 = $.Deferred();
+				let def5 = $.Deferred();
+				let def6 = $.Deferred();
+				
+				getIssuesDataAll3().done(function (data) {
+					issuesAllData = data;
+					issuesVideoJPCategory1Data = getIssuesDataByCategory(data, "グラビア");
+					issuesVideoJPCategory2Data = getIssuesDataByCategory(data, "エロス");
+					issuesVideoJPCategory3Data = getIssuesDataByCategory(data, "バラエティ");
+					issuesVideoSpentTime = getIssuesVideoSpentTime(data);
+					issuesVideoJPSpentTime = getIssuesVideoJPSpentTime(data);
+					issuesVideoJPCategory1SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "グラビア");
+					issuesVideoJPCategory2SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "エロス");
+					issuesVideoJPCategory3SpentTime = getIssuesVideoJPSpentTimeByCategory(data, "バラエティ");
+					def.resolve();
+				});
+				
+				def.done(function () {
+					getVideoJPCategory1Data3().done(function (data) {
+						videoJPCategory1Data = data;
+						def2.resolve();
+					});
+				});
+				
+				def2.done(function () {
+					getVideoJPCategory2Data3().done(function (data) {
+						videoJPCategory2Data = data;
+						def3.resolve();
+					});
+				});
+				
+				def3.done(function () {
+					getVideoJPCategory3Data3().done(function (data) {
+						videoJPCategory3Data = data;
+						def4.resolve();
+					});
+				});
+				
+				def4.done(function () {
+					analyseIssuesVideoJPCategory1Data(issuesVideoJPCategory1Data, exceptArray);
+					analyseIssuesVideoJPCategory2Data(issuesVideoJPCategory2Data, exceptArray);
+					analyseIssuesVideoJPCategory3Data(issuesVideoJPCategory3Data, exceptArray);
+					analyseIssuesVideoJPCategory1Time(issuesVideoJPCategory1Data, issuesVideoJPCategory1SpentTime);
+					analyseIssuesVideoJPCategory2Time(issuesVideoJPCategory2Data, issuesVideoJPCategory2SpentTime);
+					analyseIssuesVideoJPCategory3Time(issuesVideoJPCategory3Data, issuesVideoJPCategory3SpentTime);
+					analyseIssuesVideoJPTime(issuesVideoJPSpentTime, issuesVideoJPCategory1SpentTime, issuesVideoJPCategory2SpentTime, issuesVideoJPCategory3SpentTime);
+					analyseIssuesVideoTime(issuesVideoSpentTime, issuesVideoJPSpentTime);
+					def5.resolve();
+				});
+				
+				def5.done(function () {
+					compareVideoJPCategory1Name(videoJPCategory1Data, issuesVideoJPCategory1Data);
+					compareVideoJPCategory2Name(videoJPCategory2Data, issuesVideoJPCategory2Data);
+					compareVideoJPCategory3Name(videoJPCategory3Data, issuesVideoJPCategory3Data);
+					compareVideoJPCategory1Time(videoJPCategory1Data, issuesVideoJPCategory1Data);
+					compareVideoJPCategory2Time(videoJPCategory2Data, issuesVideoJPCategory2Data);
+					compareVideoJPCategory3Time(videoJPCategory3Data, issuesVideoJPCategory3Data);
+					compareVideoJPCategory1Confirm(videoJPCategory1Data, issuesVideoJPCategory1Data, exceptArray);
+					compareVideoJPCategory2Confirm(videoJPCategory2Data, issuesVideoJPCategory2Data, exceptArray);
+					compareVideoJPCategory3Confirm(videoJPCategory3Data, issuesVideoJPCategory3Data, exceptArray);
+					def6.resolve();
+				});
+				
+				def6.done(function () {
+					analyseWebVideoJPCategory1Data(videoJPCategory1Data);
+					analyseWebVideoJPCategory2Data(videoJPCategory2Data);
+					analyseWebVideoJPCategory3Data(videoJPCategory3Data);
+				});
+			}
+		</script>
+	</body>
+</html>

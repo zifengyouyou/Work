@@ -22,6 +22,13 @@
 		<button id="copy3" data-clipboard-target="#date" onclick="copy3()">复制</button>
 		<br />
 		<br />
+		<input id="time3" />
+		<button id="conver3" onclick="conver3()">转换</button>
+		<br />
+		<span id="date1"></span>
+		<button id="copy4" data-clipboard-target="#date1" onclick="copy4()">复制</button>
+		<br />
+		<br />
 		<button id="analyse1" onclick="analyse()">分析（basic）</button>
 		<button id="analyse2" onclick="analyse2()">分析（compare）</button>
 		<button id="analyse3" onclick="analyse3()">分析（import）</button>
@@ -108,6 +115,29 @@
 				});
 			}
 			
+			function conver3() {
+				let timeStr = $("#time3")[0].value;
+				let dateStr = "";
+				
+				if (timeStr === "0") {
+					dateStr = "1970-01-01T00:00:00.001Z";
+				} else {
+					let date = moment.tz(timeStr, "Asia/Tokyo");
+					dateStr = date.utc().format("YYYY-MM-DDTHH:mm:ss.SSS[Z]");
+				}
+				
+				$("#date1")[0].innerHTML = dateStr;
+				$("#time3")[0].value = "";
+			}
+			
+			function copy4() {
+				let clipboard = new ClipboardJS("#copy4");
+				
+				clipboard.on("success", function(e) {
+					e.clearSelection();
+				});
+			}
+			
 			function getIssuesDataAll() {
 				let url = "../Database/basic/redmine/issues.json";
 				let request = new XMLHttpRequest();
@@ -176,7 +206,7 @@
 				let time = 0;
 				
 				for (let i = 0; i < dataAll.length; i++) {
-					if (dataAll[i]._id === 1482) {
+					if (dataAll[i]._id === "1482") {
 						time = dataAll[i].spent_time;
 					}
 				}
@@ -188,7 +218,7 @@
 				let time = 0;
 				
 				for (let i = 0; i < dataAll.length; i++) {
-					if (dataAll[i]._id === 1483) {
+					if (dataAll[i]._id === "1483") {
 						time = dataAll[i].spent_time;
 					}
 				}
@@ -202,13 +232,13 @@
 				
 				switch (category) {
 					case "グラビア":
-						id = 1484;
+						id = "1484";
 						break;
 					case "エロス":
-						id = 1485;
+						id = "1485";
 						break;
 					case "バラエティ":
-						id = 1486;
+						id = "1486";
 						break;
 					default:
 						break;
@@ -766,7 +796,8 @@
 							|| (data[i].confirm.details[3].time !== issuesData[i].fourth_confirm_time)
 							|| (data[i].confirm.details[3].date.$date !== issuesData[i].fourth_confirm_date.$date)) {
 							if (exceptArray.indexOf(issuesData[i]._id) === -1) {
-								errorArray.push(data[i]._id);
+								// errorArray.push(data[i]._id);
+                                errorArray.push(issuesData[i].tracker);
 							} else {
 								warnArray.push(issuesData[i]._id);
 							}
@@ -816,7 +847,8 @@
 							|| (data[i].confirm.details[3].time !== issuesData[i].fourth_confirm_time)
 							|| (data[i].confirm.details[3].date.$date !== issuesData[i].fourth_confirm_date.$date)) {
 							if (exceptArray.indexOf(issuesData[i]._id) === -1) {
-								errorArray.push(data[i]._id);
+								// errorArray.push(data[i]._id);
+                                errorArray.push(issuesData[i].tracker);
 							} else {
 								warnArray.push(issuesData[i]._id);
 							}
@@ -866,7 +898,8 @@
 							|| (data[i].confirm.details[3].time !== issuesData[i].fourth_confirm_time)
 							|| (data[i].confirm.details[3].date.$date !== issuesData[i].fourth_confirm_date.$date)) {
 							if (exceptArray.indexOf(issuesData[i]._id) === -1) {
-								errorArray.push(data[i]._id);
+								// errorArray.push(data[i]._id);
+                                errorArray.push(issuesData[i].tracker);
 							} else {
 								warnArray.push(issuesData[i]._id);
 							}
@@ -1010,8 +1043,6 @@
 				let videoJPCategory3Data = [];
 				
 				let exceptArray = [];
-				// let exceptArray = [2239, 2340, 2387, 2440, 2463, 2470, 2608, 2617, 2632, 2885,
-				// 					2905];
 				
 				let def = $.Deferred();
 				let def2 = $.Deferred();

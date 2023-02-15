@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="zh" style="height: 100%">
+    <head>
+        <meta charset="utf-8">
+        <title>Process</title>
+    </head>
+    <body style="height: 100%; margin: 0">
+        <div id="container" style="height: 100%"></div>
+        <script src="js/jquery.min.js"></script>
+        <script src="js/echarts.min.js"></script>
+        <script>
+            let videoJPCategory1Data = [];
+            let videoJPCategory2Data = [];
+            let videoJPCategory3Data = [];
+            let total = 0;
+            let complete = 0;
+
+            function getVideoJPCategoryData(category) {
+                let url = "../Database/import/web/resource/video_jp_category_" + category + ".json";
+                let request = new XMLHttpRequest();
+                let def = $.Deferred();
+
+                request.open("GET", url);
+                request.send(null);
+                request.onload = function () {
+                    if (request.status === 200) {
+                        let temp = request.responseText;
+                        let data = "[" + temp.replace(/}\r\n{/g, "}," + "\r" + "\n" + "{") + "]";
+                        def.resolve(JSON.parse(data));
+                    }
+                };
+
+                return def;
+            }
+
+            function calculateData() {
+                total = videoJPCategory1Data.length + videoJPCategory2Data.length + videoJPCategory3Data.length;
+
+                for (let index = 0; index < videoJPCategory1Data.length; index++) {
+                    if ((videoJPCategory1Data[index].backup.is_confirmed === true) &&
+                        (videoJPCategory1Data[index].backup.is_previewed === true) &&
+                        (videoJPCategory1Data[index].backup.is_compressed === true) &&
+                        (videoJPCategory1Data[index].backup.is_uploaded_1 === true) &&
+                        (videoJPCategory1Data[index].backup.is_uploaded_2 === true)) {
+                        complete++;
+                    }
+                }
+
+                for (let index = 0; index < videoJPCategory2Data.length; index++) {
+                    if ((videoJPCategory2Data[index].backup.is_confirmed === true) &&
+                        (videoJPCategory2Data[index].backup.is_previewed === true) &&
+                        (videoJPCategory2Data[index].backup.is_compressed === true) &&
+                        (videoJPCategory2Data[index].backup.is_uploaded_1 === true) &&
+                        (videoJPCategory2Data[index].backup.is_uploaded_2 === true)) {
+                        complete++;
+                    }
+                }
+
+                for (let index = 0; index < videoJPCategory3Data.length; index++) {
+                    if ((videoJPCategory3Data[index].backup.is_confirmed === true) &&
+                        (videoJPCategory3Data[index].backup.is_previewed === true) &&
+                        (videoJPCategory3Data[index].backup.is_compressed === true) &&
+                        (videoJPCategory3Data[index].backup.is_uploaded_1 === true) &&
+                        (videoJPCategory3Data[index].backup.is_uploaded_2 === true)) {
+                        complete++;
+                    }
+                }
+            }
+
+            function drawChart() {
+                let dom = document.getElementById("container");
+                let chart = echarts.init(dom, null, {
+                    renderer: "canvas",
+                    useDirtyRect: false
+                });
+                let app = {};
+                let option = {
+                    tooltip: {
+                        trigger: "item"
+                    },
+                    legend: {
+                        top: "5%",
+                        left: "center"
+                    },
+                    series: [
+                        {
+                            name: "Access From",
+                            type: "pie",
+                            radius: ["40%", "70%"],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: "#fff",
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: false,
+                                position: "center"
+                            },
+                            emphasis: {
+                                label: {
+                                    show: true,
+                                    fontSize: "40",
+                                    fontWeight: "bold"
+                                }
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            color: [
+                                "#91cc75",
+                                "#ee6666"
+                            ],
+                            data: [
+                                { value: complete, name: "Complete" },
+                                { value: total - complete, name: "Remain" },
+                            ]
+                        }
+                    ]
+                };
+
+                if (option && typeof option === "object") {
+                    chart.setOption(option);
+                }
+
+                window.addEventListener("resize", chart.resize);
+            }
+
+            function backupProcess() {
+                let def = $.Deferred();
+                let def2 = $.Deferred();
+                let def3 = $.Deferred();
+
+                getVideoJPCategoryData(1).done(function (data) {
+                    videoJPCategory1Data = data;
+
+                    def.resolve();
+                });
+
+                def.done(function () {
+                    getVideoJPCategoryData(2).done(function (data) {
+                        videoJPCategory2Data = data;
+
+                        def2.resolve();
+                    });
+                });
+
+                def2.done(function () {
+                    getVideoJPCategoryData(3).done(function (data) {
+                        videoJPCategory3Data = data;
+
+                        def3.resolve();
+                    })
+                });
+
+                def3.done(function () {
+                    calculateData();
+                    drawChart();
+                });
+            }
+
+            backupProcess();
+        </script>
+    </body>
+</html>
